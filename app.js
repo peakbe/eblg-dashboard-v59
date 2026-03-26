@@ -36,6 +36,29 @@ const SONOS = [
   { id:"F012", lat:50.621917, lon:5.254747 }
 ];
 
+const RULES = {
+  "22": {
+    "Décollage": {
+      vert: ["F002","F003","F004","F005","F006","F007","F008","F009","F010","F011","F012","F013","F016"],
+      rouge: []
+    },
+    "Atterrissage": {
+      vert: ["F001","F014","F015","F017"],
+      rouge: []
+    }
+  },
+  "04": {
+    "Décollage": {
+      vert: ["F002","F003","F007","F008","F009","F011","F013"],
+      rouge: ["F004","F005","F006","F010","F012","F016"]
+    },
+    "Atterrissage": {
+      vert: ["F014","F015"],
+      rouge: ["F001","F017"]
+    }
+  }
+};
+
 /* ----------------------------------------------------------
    MAP
 ---------------------------------------------------------- */
@@ -157,42 +180,26 @@ function buildCorridor(heading) {
   };
 }
 
-function computeImpacted(heading) {
-  const { polygon, centerline } = buildCorridor(heading);
-
-  if (corridorLayer) map.removeLayer(corridorLayer);
-  corridorLayer = L.polygon(polygon, {
-    color: "#f97316",
-    weight: 2,
-    fillOpacity: 0.15
-  }).addTo(map);
-
-  if (arrowLayer) map.removeLayer(arrowLayer);
-arrowLayer = L.polyline(centerline, {
-  color: "#f97316",
-  weight: 3
-}).addTo(map);
-
+function computeImpacted(runwayName, phase) {
+  const rules = RULES[runwayName][phase];
 
   const impacted = [];
 
-  // 🔧 FIX : créer un polygone une seule fois
-  const poly = L.polygon(polygon);
-
   SONO_MARKERS.forEach(s => {
-    const inside = poly.getBounds().contains([s.lat, s.lon]);
-
-    s.marker.setStyle(
-      inside
-        ? { color: "#b91c1c", fillColor: "#b91c1c" }
-        : { color: "#2563eb", fillColor: "#2563eb" }
-    );
-
-    if (inside) impacted.push(s);
+    if (rules.vert.includes(s.id)) {
+      s.marker.setStyle({ color: "#10b981", fillColor: "#10b981" }); // vert
+      impacted.push(s);
+    } else if (rules.rouge.includes(s.id)) {
+      s.marker.setStyle({ color: "#b91c1c", fillColor: "#b91c1c" }); // rouge
+      impacted.push(s);
+    } else {
+      s.marker.setStyle({ color: "#2563eb", fillColor: "#2563eb" }); // bleu par défaut
+    }
   });
 
   return impacted;
 }
+
 
 
 
@@ -214,17 +221,25 @@ async function refresh() {
   updateFlightsUI(fids);
 
   /* RUNWAY */
-  const rw = extractRunway(fids);
-  if (!rw) {
-    document.getElementById("runway-info").textContent = "Piste non déterminée.";
-    return;
-  }
+const rw = extractRunway(fids);
+if (!rw) {
+  document.getElementById("runway-info").textContent = "Piste non déterminée.";
+  return;
+}
+
+/* Déterminer la phase */
+let phase = "Décollage";
+if (fids.arrivals.length > 0) phase = "Atterrissage";
+
+document.getElementById("runway-info").textContent =
+  `Piste ${rw.name} – ${phase}`;
+
 
   document.getElementById("runway-info").textContent =
     `Piste ${rw.name} (cap ${rw.heading}°)`;
 
   /* COULOIR + SONOMÈTRES */
-  const impacted = computeImpacted(rw.heading);
+  const impacted = computeImpacted(rw.name, phase);
 
   document.getElementById("sonos-impacted").innerHTML =
     impacted.length
