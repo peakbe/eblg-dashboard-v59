@@ -78,59 +78,49 @@ app.get("/taf", async (req, res) => {
    FIDS AVEC CORS + FALLBACK ROBUSTE
 ---------------------------------------------------------- */
 app.get("/fids", async (req, res) => {
+  const fallback = [
+    {
+      flight: "N/A",
+      destination: "N/A",
+      time: "N/A",
+      status: "Unavailable",
+      fallback: true,
+      timestamp: new Date().toISOString()
+    }
+  ];
+
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 4000); // 4 sec max
+
     const url = "https://opensky-network.org/api/flights/departure?airport=EBLG&begin=0&end=0";
 
-    let response;
-    try {
-      response = await fetch(url, { timeout: 5000 });
-    } catch (networkError) {
-      console.error("Erreur réseau FIDS :", networkError);
-      return res.json([
-        {
-          flight: "N/A",
-          destination: "N/A",
-          time: "N/A",
-          status: "Unavailable",
-          fallback: true,
-          timestamp: new Date().toISOString()
-        }
-      ]);
+    const response = await fetch(url, {
+      signal: controller.signal
+    }).catch(err => {
+      console.error("Erreur réseau FIDS :", err);
+      return null;
+    });
+
+    clearTimeout(timeout);
+
+    if (!response || !response.ok) {
+      console.error("FIDS HTTP error :", response?.status);
+      return res.json(fallback);
     }
 
-    if (!response.ok) {
-      console.error("FIDS HTTP error :", response.status);
-      return res.json([
-        {
-          flight: "N/A",
-          destination: "N/A",
-          time: "N/A",
-          status: "Unavailable",
-          fallback: true,
-          timestamp: new Date().toISOString()
-        }
-      ]);
-    }
+    const data = await response.json().catch(err => {
+      console.error("Erreur JSON FIDS :", err);
+      return fallback;
+    });
 
-    const data = await response.json();
-    return res.json(data);
+    return res.json(data.length ? data : fallback);
 
   } catch (error) {
     console.error("FIDS DOWN → fallback activé :", error.message);
-
-    return res.json([
-      {
-        flight: "N/A",
-        destination: "N/A",
-        time: "N/A",
-        status: "Unavailable",
-        fallback: true,
-        timestamp: new Date().toISOString()
-      }
-    ]);
+    return res.json(fallback);
   }
 });
-
 
 /* ----------------------------------------------------------
    DÉMARRAGE DU SERVEUR (MANQUAIT !)
