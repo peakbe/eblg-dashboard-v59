@@ -1,9 +1,17 @@
+// ======================================================
+// SONOMÈTRES
+// ======================================================
+
 import { SONOS, SONO_ADDRESSES } from "./config.js";
 import { haversineDistance } from "./helpers.js";
 
 export let sonometers = {};
 export let heatLayer = null;
 
+/**
+ * Surligne un sonomètre dans la liste.
+ * @param {string} id
+ */
 export function highlightSonometerInList(id) {
     const list = document.getElementById("sono-list");
     if (!list) return;
@@ -19,6 +27,10 @@ export function highlightSonometerInList(id) {
     }
 }
 
+/**
+ * Met à jour la heatmap en fonction des statuts.
+ * @param {L.Map} map
+ */
 export function updateHeatmap(map) {
     if (heatLayer) map.removeLayer(heatLayer);
 
@@ -37,7 +49,12 @@ export function updateHeatmap(map) {
     }).addTo(map);
 }
 
-export function showDetailPanel(id, runwayHeading) {
+/**
+ * Affiche le panneau latéral détaillé.
+ * @param {string} id
+ * @param {[number,number]} runwayStart
+ */
+export function showDetailPanel(id, runwayStart) {
     const s = sonometers[id];
     if (!s) return;
 
@@ -51,7 +68,7 @@ export function showDetailPanel(id, runwayHeading) {
     const fullAddress = SONO_ADDRESSES[id] || "Adresse inconnue";
     const townName = fullAddress.split(",")[1] || "—";
 
-    const d = haversineDistance([s.lat, s.lon], runwayHeading).toFixed(2);
+    const d = haversineDistance([s.lat, s.lon], runwayStart).toFixed(2);
 
     title.textContent = id;
     address.textContent = fullAddress;
@@ -62,6 +79,10 @@ export function showDetailPanel(id, runwayHeading) {
     panel.classList.remove("hidden");
 }
 
+/**
+ * Initialise les sonomètres sur la carte.
+ * @param {L.Map} map
+ */
 export function initSonometers(map) {
     SONOS.forEach(s => {
         const marker = L.circleMarker([s.lat, s.lon], {
