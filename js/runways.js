@@ -2,7 +2,10 @@
 // RUNWAYS & CORRIDORS (CORRIGÉ)
 // ======================================================
 
-// Coordonnées réelles EBLG
+/**
+ * Coordonnées réelles des seuils de piste EBLG.
+ * heading = QFU réel
+ */
 export const RUNWAYS = {
     "22": {
         heading: 220,
@@ -12,13 +15,15 @@ export const RUNWAYS = {
     },
     "04": {
         heading: 40,
-        start: [50.64455, 5.46515],   // seuil 04
+        start: [50.64455, 5.46515],   // seuil 04 (corrigé)
         end:   [50.64695, 5.44340],   // seuil 22
         width_m: 45
     }
 };
 
-// Corridors réalistes (optionnel)
+/**
+ * Corridors réalistes alignés sur l’axe 04/22.
+ */
 export const CORRIDORS = {
     "04": [
         [50.70000, 5.33000],
@@ -32,9 +37,20 @@ export const CORRIDORS = {
     ]
 };
 
+// ======================================================
+// OUTILS ANGULAIRES
+// ======================================================
+
+/**
+ * Différence angulaire correcte (gère les cas >180°).
+ */
+function angleDiff(a, b) {
+    const d = Math.abs(a - b);
+    return Math.min(d, 360 - d);
+}
 
 // ======================================================
-// DESSIN DE LA PISTE (CORRIGÉ)
+// DESSIN DE LA PISTE
 // ======================================================
 
 export function drawRunway(runway, layer) {
@@ -95,9 +111,8 @@ export function drawRunway(runway, layer) {
     }).addTo(layer);
 }
 
-
 // ======================================================
-// CORRIDOR (inchangé)
+// CORRIDOR
 // ======================================================
 
 export function drawCorridor(runway, layer) {
@@ -124,18 +139,14 @@ export function drawCorridor(runway, layer) {
         }).addTo(layer);
     }
 }
+
+// ======================================================
+// LOGIQUE METAR
+// ======================================================
+
 /**
  * Détermine la piste active en fonction du vent.
- * @param {number} windDir
- * @returns {string}
  */
-function angleDiff(a, b) {
-    return Math.min(
-        Math.abs(a - b),
-        360 - Math.abs(a - b)
-    );
-}
-
 export function getRunwayFromWind(windDir) {
     if (!windDir) return "UNKNOWN";
 
@@ -145,18 +156,9 @@ export function getRunwayFromWind(windDir) {
     return diff22 < diff04 ? "22" : "04";
 }
 
-
 /**
- * Calcule le crosswind.
- * @returns {{crosswind:number, angleDiff:number}}
+ * Calcule le crosswind réel.
  */
-function angleDiff(a, b) {
-    return Math.min(
-        Math.abs(a - b),
-        360 - Math.abs(a - b)
-    );
-}
-
 export function computeCrosswind(windDir, windSpeed, runwayHeading) {
     if (!windDir || !windSpeed || !runwayHeading)
         return { crosswind: 0, angleDiff: 0 };
@@ -169,4 +171,3 @@ export function computeCrosswind(windDir, windSpeed, runwayHeading) {
         angleDiff: diff
     };
 }
-
