@@ -13,7 +13,6 @@ export const MAX_HISTORY = 50;
 // Cluster layer
 export let clusterLayer = L.markerClusterGroup();
 
-
 // ------------------------------------------------------
 // 1) Surlignage dans la liste
 // ------------------------------------------------------
@@ -31,8 +30,6 @@ export function highlightSonometerInList(id) {
         item.scrollIntoView({ behavior: "smooth", block: "center" });
     }
 }
-
-
 
 // ------------------------------------------------------
 // 2) Heatmap dynamique
@@ -54,8 +51,6 @@ export function updateHeatmap(map) {
         minOpacity: 0.3
     }).addTo(map);
 }
-
-
 
 // ------------------------------------------------------
 // 3) Panneau détail
@@ -84,8 +79,6 @@ export function showDetailPanel(id, runwayStart) {
 
     panel.classList.remove("hidden");
 }
-
-
 
 // ------------------------------------------------------
 // 4) Historique Heatmap
@@ -147,4 +140,29 @@ export function initSonometers(map) {
     });
 
     map.addLayer(clusterLayer);
+}
+
+// ------------------------------------------------------
+// 6) Bouton ON/OFF Heatmap
+// ------------------------------------------------------
+export function initHeatmapToggle(map) {
+    const btn = document.getElementById("toggle-heatmap");
+    if (!btn) return;
+
+    let enabled = true;
+
+    btn.onclick = () => {
+        enabled = !enabled;
+
+        if (!enabled) {
+            if (heatLayer) map.removeLayer(heatLayer);
+            btn.textContent = "Heatmap OFF";
+        } else {
+            updateHeatmap(map);
+            btn.textContent = "Heatmap ON";
+        }
+    };
+
+    // Heatmap initiale
+    updateHeatmap(map);
 }
